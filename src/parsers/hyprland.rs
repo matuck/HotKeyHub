@@ -133,11 +133,16 @@ pub fn parse_hyprland_recursive(path: PathBuf, ctx: &mut HyprContext, binds: &mu
                 String::new()
             };
 
-            let display_cmd = if arg.is_empty() {
+            let mut display_cmd = if arg.is_empty() {
                 dispatcher.to_string()
             } else {
                 format!("{} {}", dispatcher, arg)
             };
+
+            // Expand $variables in command display
+            for (v_key, v_val) in &ctx.variables {
+                display_cmd = display_cmd.replace(&format!("${}", v_key), v_val);
+            }
 
             binds.push(Keybind {
                 mods: mods_list,

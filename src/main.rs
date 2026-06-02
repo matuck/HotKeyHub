@@ -18,15 +18,32 @@ fn parse_args() -> RunMode {
     while i < args.len() {
         match args[i].as_str() {
             "--hyprland" => {
-                if i + 1 < args.len() {
+                if i + 1 < args.len() && !args[i + 1].starts_with("--") {
                     mode = RunMode::SingleHyprland(PathBuf::from(&args[i + 1]));
                     i += 1;
+                } else {
+                    // Default: auto-detect in ~/.config/hypr/
+                    let hypr_dir = dirs::config_dir()
+                        .map(|p| p.join("hypr"))
+                        .unwrap_or_else(|| PathBuf::from("."));
+                    let lua = hypr_dir.join("hyprland.lua");
+                    let conf = hypr_dir.join("hyprland.conf");
+                    if lua.exists() {
+                        mode = RunMode::SingleHyprland(lua);
+                    } else {
+                        mode = RunMode::SingleHyprland(conf);
+                    }
                 }
             }
             "--sxhkd" => {
-                if i + 1 < args.len() {
+                if i + 1 < args.len() && !args[i + 1].starts_with("--") {
                     mode = RunMode::SingleSxhkd(PathBuf::from(&args[i + 1]));
                     i += 1;
+                } else {
+                    let default = dirs::config_dir()
+                        .map(|p| p.join("sxhkd/sxhkdrc"))
+                        .unwrap_or_else(|| PathBuf::from("sxhkdrc"));
+                    mode = RunMode::SingleSxhkd(default);
                 }
             }
             _ => {}

@@ -2,7 +2,10 @@ pub mod tab_builder;
 pub mod widgets;
 
 use crate::models::RunMode;
-use crate::parsers::{hyprland::HyprContext, parse_hyprland_recursive, parse_sxhkd};
+use crate::parsers::{
+    hyprland::HyprContext, hyprland_lua::HyprLuaContext, parse_hyprland_lua_recursive,
+    parse_hyprland_recursive, parse_sxhkd,
+};
 use crate::theme::{generate_css, load_theme};
 use gtk4::prelude::*;
 use gtk4::{
@@ -73,48 +76,83 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
 
     match run_mode {
         RunMode::All => {
-            // 1. Hyprland Tab
             if let Some(config_home) = dirs::config_dir() {
-                let mut ctx = HyprContext::new();
-                let mut hypr_binds = Vec::new();
-                parse_hyprland_recursive(
-                    config_home.join("hypr/hyprland.conf"),
-                    &mut ctx,
-                    &mut hypr_binds,
-                );
-                let (hypr_page, search, scrolled) = tab_builder::create_tab_page(hypr_binds);
-                search_entries.borrow_mut().push(search);
-                scrolled_windows.borrow_mut().push(scrolled);
-                notebook.append_page(&hypr_page, Some(&Label::new(Some("Hyprland"))));
+                // 1. Hyprland (Lua) Tab — takes priority over Hyprlang
+                let hyprlua_entry = config_home.join("hypr/hyprland.lua");
+                if hyprlua_entry.exists() {
+                    let base_dir = config_home.join("hypr");
+                    let mut ctx = HyprLuaContext::new(base_dir);
+                    let mut lua_binds = Vec::new();
+                    parse_hyprland_lua_recursive(
+                        hyprlua_entry,
+                        &mut ctx,
+                        &mut lua_binds,
+                    );
+                    let (page, search, scrolled) =
+                        tab_builder::create_tab_page(lua_binds);
+                    search_entries.borrow_mut().push(search);
+                    scrolled_windows.borrow_mut().push(scrolled);
+                    notebook.append_page(
+                        &page,
+                        Some(&Label::new(Some("Hyprland (Lua)"))),
+                    );
+                }
 
-                // 2. Sxhkd Tabs (Auto Detection)
+                // 2. Hyprland (Hyprlang) Tab
+                let hypr_conf = config_home.join("hypr/hyprland.conf");
+                if hypr_conf.exists() {
+                    let mut ctx = HyprContext::new();
+                    let mut hypr_binds = Vec::new();
+                    parse_hyprland_recursive(hypr_conf, &mut ctx, &mut hypr_binds);
+                    let (hypr_page, search, scrolled) =
+                        tab_builder::create_tab_page(hypr_binds);
+                    search_entries.borrow_mut().push(search);
+                    scrolled_windows.borrow_mut().push(scrolled);
+                    notebook.append_page(
+                        &hypr_page,
+                        Some(&Label::new(Some("Hyprland (Hyprlang)"))),
+                    );
+                }
+
+                // 3. Sxhkd Tabs (Auto Detection)
                 let bspwm_sxhkd = config_home.join("bspwm/sxhkdrc");
                 let normal_sxhkd = config_home.join("sxhkd/sxhkdrc");
 
-                // If found in bspwm folder
                 if bspwm_sxhkd.exists() {
                     let binds = parse_sxhkd(bspwm_sxhkd);
                     let (page, search, scrolled) = tab_builder::create_tab_page(binds);
                     search_entries.borrow_mut().push(search);
                     scrolled_windows.borrow_mut().push(scrolled);
-                    notebook.append_page(&page, Some(&Label::new(Some("Sxhkd (bspwm)"))));
+                    notebook.append_page(
+                        &page,
+                        Some(&Label::new(Some("Sxhkd (bspwm)"))),
+                    );
                 }
 
-                // If found in sxhkd folder
                 if normal_sxhkd.exists() {
                     let binds = parse_sxhkd(normal_sxhkd);
                     let (page, search, scrolled) = tab_builder::create_tab_page(binds);
                     search_entries.borrow_mut().push(search);
                     scrolled_windows.borrow_mut().push(scrolled);
-                    notebook.append_page(&page, Some(&Label::new(Some("Sxhkd"))));
+                    notebook
+                        .append_page(&page, Some(&Label::new(Some("Sxhkd"))));
                 }
             }
         }
         RunMode::SingleHyprland(path) => {
             notebook.set_show_tabs(false);
-            let mut ctx = HyprContext::new();
             let mut binds = Vec::new();
-            parse_hyprland_recursive(path.clone(), &mut ctx, &mut binds);
+            if path.extension().map_or(false, |ext| ext == "lua") {
+                let base_dir = path
+                    .parent()
+                    .map(|p| p.to_path_buf())
+                    .unwrap_or_else(|| PathBuf::from("."));
+                let mut ctx = HyprLuaContext::new(base_dir);
+                parse_hyprland_lua_recursive(path.clone(), &mut ctx, &mut binds);
+            } else {
+                let mut ctx = HyprContext::new();
+                parse_hyprland_recursive(path.clone(), &mut ctx, &mut binds);
+            }
             let (page, search, scrolled) = tab_builder::create_tab_page(binds);
             search_entries.borrow_mut().push(search);
             scrolled_windows.borrow_mut().push(scrolled);
