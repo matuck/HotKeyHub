@@ -33,7 +33,8 @@ HotkeyHub - это приложение, отображающее сочетан
 ### 📋 Поддержка нескольких конфигураций
 
 HotkeyHub [автоматически находит WM](#supported-formats) и парсит сочетания клавиш:
-- **Hyprland** (`~/.config/hypr/hyprland.conf`)
+- **HyprLang** (`~/.config/hypr/hyprland.conf`)
+- **HyprLua** (`~/.config/hypr/hyprland.lua`)
 - **SXHKD** (`~/.config/sxhkd/sxhkdrc` или `~/.config/bspwm/sxhkdrc`)
 
 Каждая конфигурация отображается в отдельной вкладке!
@@ -80,18 +81,23 @@ sudo cp target/release/hotkeyhub /usr/bin/
 hotkeyhub
 
 # Или запустите для конкретного конфига
-hotkeyhub --hyprland ~/.config/hypr/hyprland.conf
+hotkeyhub --hyprland ~/.config/hypr/hyprland.lua
 hotkeyhub --sxhkd ~/.config/sxhkd/sxhkdrc
 ```
 
 ### Добавьте в ваш WM
 
-**Hyprland** (`~/.config/hypr/hyprland.conf`):
+**Hyprland (Hyprlang)** (`~/.config/hypr/hyprland.conf`):
 ```
 bind = $mainMod, SLASH, exec, hotkeyhub  # Super + /
 ```
 
-**BSPWM** (`~/.config/sxhkd/sxhkdrc`):
+**Hyprland (Lua)** (`~/.config/hypr/hyprland.lua`):
+```lua
+hl.bind(mainMod .. " + SLASH", hl.dsp.exec_cmd("hotkeyhub --hyprland"), {description = "Hotkeys cheat sheet"})
+```
+
+**BSPWM (sxhkd)** (`~/.config/sxhkd/sxhkdrc`):
 ```
 super + slash
     hotkeyhub
@@ -127,7 +133,7 @@ border = #45475a
 
 ## <a name="supported-formats"></a>🔧 Поддерживаемые форматы
 
-### Hyprland
+### Hyprland (Hyprlang)
 
 ```
 # Простые бинды
@@ -145,6 +151,29 @@ bind = $mainMod, code:60, exec, rofimoji  # code:60 = точка
 # Мышь
 bindm = $mainMod, mouse:272, movewindow   # ЛКМ
 bindm = $mainMod, mouse:273, resizewindow # ПКМ
+```
+
+### Hyprland (Lua)
+
+```lua
+-- Simple binds
+
+local term = "kitty"
+
+hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(term), {description = "Open terminal"})
+
+-- With modifiers
+hl.bind("SUPER + SHIFT + Q", hl.dsp.window.kill(), {description = "Kill window"})
+
+-- Special keys
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"), {description = "Increase volume", repeating = true, locked = true})
+
+-- Code keys
+hl.bind(mainMod .. " + code:60", hl.dsp.exec_cmd("rofimoji"), {description = "Open emoji picker"})
+
+-- Mouse
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), {description = "Move window with mouse", mouse = true}) -- LMB
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), {description = "Resize with mouse", mouse = true}) -- RMB
 ```
 
 ### SXHKD
