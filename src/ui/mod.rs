@@ -1,6 +1,7 @@
 pub mod tab_builder;
 pub mod widgets;
 
+use crate::config::load_config;
 use crate::models::RunMode;
 use crate::parsers::{
     hyprland::HyprContext, hyprland_lua::HyprLuaContext, parse_hyprland_lua_recursive,
@@ -27,6 +28,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
         .default_height(800)
         .build();
 
+    let config = load_config();
     // Theme and CSS Provider
     let provider = CssProvider::new();
     let initial_theme = load_theme();
@@ -89,7 +91,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
                         &mut lua_binds,
                     );
                     let (page, search, scrolled) =
-                        tab_builder::create_tab_page(lua_binds);
+                        tab_builder::create_tab_page(lua_binds, config.switch_description);
                     search_entries.borrow_mut().push(search);
                     scrolled_windows.borrow_mut().push(scrolled);
                     notebook.append_page(
@@ -105,7 +107,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
                     let mut hypr_binds = Vec::new();
                     parse_hyprland_recursive(hypr_conf, &mut ctx, &mut hypr_binds);
                     let (hypr_page, search, scrolled) =
-                        tab_builder::create_tab_page(hypr_binds);
+                        tab_builder::create_tab_page(hypr_binds, config.switch_description);
                     search_entries.borrow_mut().push(search);
                     scrolled_windows.borrow_mut().push(scrolled);
                     notebook.append_page(
@@ -120,7 +122,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
 
                 if bspwm_sxhkd.exists() {
                     let binds = parse_sxhkd(bspwm_sxhkd);
-                    let (page, search, scrolled) = tab_builder::create_tab_page(binds);
+                    let (page, search, scrolled) = tab_builder::create_tab_page(binds, config.switch_description);
                     search_entries.borrow_mut().push(search);
                     scrolled_windows.borrow_mut().push(scrolled);
                     notebook.append_page(
@@ -131,7 +133,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
 
                 if normal_sxhkd.exists() {
                     let binds = parse_sxhkd(normal_sxhkd);
-                    let (page, search, scrolled) = tab_builder::create_tab_page(binds);
+                    let (page, search, scrolled) = tab_builder::create_tab_page(binds, config.switch_description);
                     search_entries.borrow_mut().push(search);
                     scrolled_windows.borrow_mut().push(scrolled);
                     notebook
@@ -153,7 +155,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
                 let mut ctx = HyprContext::new();
                 parse_hyprland_recursive(path.clone(), &mut ctx, &mut binds);
             }
-            let (page, search, scrolled) = tab_builder::create_tab_page(binds);
+            let (page, search, scrolled) = tab_builder::create_tab_page(binds, config.switch_description);
             search_entries.borrow_mut().push(search);
             scrolled_windows.borrow_mut().push(scrolled);
             notebook.append_page(&page, Some(&Label::new(None)));
@@ -161,7 +163,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
         RunMode::SingleSxhkd(path) => {
             notebook.set_show_tabs(false);
             let binds = parse_sxhkd(path.clone());
-            let (page, search, scrolled) = tab_builder::create_tab_page(binds);
+            let (page, search, scrolled) = tab_builder::create_tab_page(binds,config.switch_description);
             search_entries.borrow_mut().push(search);
             scrolled_windows.borrow_mut().push(scrolled);
             notebook.append_page(&page, Some(&Label::new(None)));

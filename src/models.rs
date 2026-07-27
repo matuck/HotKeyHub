@@ -9,6 +9,10 @@ pub struct Keybind {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub switch_description: bool
+}
 /// Режим работы приложения
 #[derive(Debug, Clone)]
 pub enum RunMode {
@@ -27,6 +31,13 @@ pub struct Theme {
     pub border: String,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            switch_description: false,
+        }
+    }
+}
 impl Default for Theme {
     fn default() -> Self {
         Self {
