@@ -43,7 +43,7 @@ pub fn build_ui(app: &Application, run_mode: &RunMode) {
     // Watch for theme changes
     let provider_weak = provider.downgrade();
     let config_path = dirs::config_dir()
-        .map(|p| p.join("hypr-keys/theme.conf"))
+        .map(|p| p.join("HotkeyHub/theme.conf"))
         .unwrap_or_else(|| PathBuf::from("theme.conf"));
 
     // Track last modified time
