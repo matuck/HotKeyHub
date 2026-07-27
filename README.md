@@ -115,6 +115,17 @@ super + slash
 > [!TIP]
 > On startup, the cursor is automatically in the search field — start typing right away!
 
+## <a name="configuration"></a>Configuration
+
+There is minimal configuration for HotkeyHub.
+Configuration is done in file `~/.config/HotkeyHub/app.conf`
+```
+switch_description = true
+```
+
+> [!NOTE]
+> switch_description defaults to false.  This switches the placement of description and command.
+
 ## <a name="themes"></a>🎨 Theme Customization
 
 HotkeyHub supports custom themes via `~/.config/HotkeyHub/theme.conf`:

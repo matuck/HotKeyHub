@@ -1,5 +1,6 @@
 mod models;
 mod parsers;
+mod config;
 mod theme;
 mod ui;
 mod utils;

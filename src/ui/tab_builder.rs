@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 /// Creates a tab page with keybinds table and search
-pub fn create_tab_page(binds: Vec<Keybind>) -> (GtkBox, SearchEntry, ScrolledWindow) {
+pub fn create_tab_page(binds: Vec<Keybind>, switchDescription: bool) -> (GtkBox, SearchEntry, ScrolledWindow) {
     let container = GtkBox::new(Orientation::Vertical, 0);
     container.add_css_class("tab-container");
 
@@ -85,49 +85,103 @@ pub fn create_tab_page(binds: Vec<Keybind>) -> (GtkBox, SearchEntry, ScrolledWin
         spacer.set_hexpand(true);
         main_row.append(&spacer);
 
-        // Info icon on the right (same level as keys) - now clickable
-        let popover_option = if let Some(desc) = &bind.description {
-            let info_icon = Label::new(Some("🛈"));
-            info_icon.add_css_class("info-icon");
-            info_icon.set_halign(gtk4::Align::End);
-            info_icon.set_valign(gtk4::Align::Center);
+        if switchDescription {
+            // Info icon on the right (same level as keys) - now clickable
+            let popover_option = if let Some(desc) = Some(&bind.command.clone()) {
+                let info_icon = Label::new(Some("🛈"));
+                info_icon.add_css_class("info-icon");
+                info_icon.set_halign(gtk4::Align::End);
+                info_icon.set_valign(gtk4::Align::Center);
 
-            // Create popover with description
-            let popover = Popover::new();
-            let desc_label = Label::new(Some(desc));
-            desc_label.set_wrap(true);
-            desc_label.set_max_width_chars(40);
-            desc_label.set_margin_start(12);
-            desc_label.set_margin_end(12);
-            desc_label.set_margin_top(8);
-            desc_label.set_margin_bottom(8);
-            popover.set_child(Some(&desc_label));
-            popover.set_parent(&info_icon);
+                // Create popover with description
+                let popover = Popover::new();
+                let desc_label = Label::new(Some(desc));
+                desc_label.set_wrap(true);
+                desc_label.set_max_width_chars(40);
+                desc_label.set_margin_start(12);
+                desc_label.set_margin_end(12);
+                desc_label.set_margin_top(8);
+                desc_label.set_margin_bottom(8);
+                popover.set_child(Some(&desc_label));
+                popover.set_parent(&info_icon);
 
-            // Add click gesture to label
-            let popover_clone = popover.clone();
-            let gesture = gtk4::GestureClick::new();
-            gesture.connect_released(move |_, _, _, _| {
-                popover_clone.popup();
-            });
-            info_icon.add_controller(gesture);
+                // Add click gesture to label
+                let popover_clone = popover.clone();
+                let gesture = gtk4::GestureClick::new();
+                gesture.connect_released(move |_, _, _, _| {
+                    popover_clone.popup();
+                });
+                info_icon.add_controller(gesture);
 
-            main_row.append(&info_icon);
-            Some(popover)
+                main_row.append(&info_icon);
+                Some(popover)
+            } else {
+                None
+            };
+            popovers.borrow_mut().push(popover_option);
         } else {
-            None
-        };
+            // Info icon on the right (same level as keys) - now clickable
+            let popover_option = if let Some(desc) = Some(bind.description.clone().unwrap_or_default().as_str()) {
+                let info_icon = Label::new(Some("🛈"));
+                info_icon.add_css_class("info-icon");
+                info_icon.set_halign(gtk4::Align::End);
+                info_icon.set_valign(gtk4::Align::Center);
+
+                // Create popover with description
+                let popover = Popover::new();
+                let desc_label = Label::new(Some(desc));
+                desc_label.set_wrap(true);
+                desc_label.set_max_width_chars(40);
+                desc_label.set_margin_start(12);
+                desc_label.set_margin_end(12);
+                desc_label.set_margin_top(8);
+                desc_label.set_margin_bottom(8);
+                popover.set_child(Some(&desc_label));
+                popover.set_parent(&info_icon);
+
+                // Add click gesture to label
+                let popover_clone = popover.clone();
+                let gesture = gtk4::GestureClick::new();
+                gesture.connect_released(move |_, _, _, _| {
+                    popover_clone.popup();
+                });
+                info_icon.add_controller(gesture);
+
+                main_row.append(&info_icon);
+                Some(popover)
+            } else {
+                None
+            };
+            popovers.borrow_mut().push(popover_option);
+
+
+
+
+        }
 
         card.append(&main_row);
 
-        // Command label - selectable for copying
-        let lbl_cmd = Label::new(Some(&bind.command));
-        lbl_cmd.set_wrap(true);
-        lbl_cmd.set_max_width_chars(35);
-        lbl_cmd.set_xalign(0.0);
-        lbl_cmd.set_selectable(true);
-        lbl_cmd.add_css_class("command");
-        card.append(&lbl_cmd);
+        if switchDescription {
+            // Command label - selectable for copying
+            let lbl_cmd = Label::new(Some(bind.description.clone().unwrap_or_default().as_str()));
+            lbl_cmd.set_wrap(true);
+            lbl_cmd.set_max_width_chars(35);
+            lbl_cmd.set_xalign(0.0);
+            lbl_cmd.set_selectable(true);
+            lbl_cmd.add_css_class("command");
+            card.append(&lbl_cmd);
+        } else {
+            // Command label - selectable for copying
+            let lbl_cmd = Label::new(Some(&bind.command));
+            lbl_cmd.set_wrap(true);
+            lbl_cmd.set_max_width_chars(35);
+            lbl_cmd.set_xalign(0.0);
+            lbl_cmd.set_selectable(true);
+            lbl_cmd.add_css_class("command");
+            card.append(&lbl_cmd);
+        }
+
+
 
         let child = FlowBoxChild::new();
         child.set_child(Some(&card));
@@ -149,7 +203,7 @@ pub fn create_tab_page(binds: Vec<Keybind>) -> (GtkBox, SearchEntry, ScrolledWin
         }
 
         flow_box.insert(&child, -1);
-        popovers.borrow_mut().push(popover_option);
+
     }
 
     let entry_weak = search_entry.downgrade();
